@@ -6,24 +6,38 @@ import { format } from 'date-fns'
 import { zeroAddress } from 'viem'
 import { abbreviateAddress } from '@repo/lib/shared/utils/addresses'
 import { fNum } from '@repo/lib/shared/utils/numbers'
-import { isBoosted, isCowAmmPool, isStable, isV2Pool, isV3Pool } from '../../../pool.helpers'
+import {
+  isBoosted,
+  isCowAmmPool,
+  isStable,
+  isV2Pool,
+  isV3Pool,
+  isGyroEPool,
+} from '../../../pool.helpers'
 import { useCurrency } from '@repo/lib/shared/hooks/useCurrency'
 import { getPoolTypeLabel, shouldHideSwapFee } from '../../../pool.utils'
 import { useTokens } from '@repo/lib/modules/tokens/TokensProvider'
 import { compact } from 'lodash'
 import { getBlockExplorerAddressUrl } from '@repo/lib/shared/utils/blockExplorer'
 import { PROJECT_CONFIG } from '@repo/lib/config/getProjectConfig'
+import { useGetECLPLiquidityProfile } from '@repo/lib/modules/eclp/useGetECLPLiquidityProfile'
 
 type FormattedPoolAttributes = {
   title: string
-  value: string
+  value?: string
   link?: string
+  dropdown?: {
+    title: string
+    value: string
+    tooltip: string
+  }[]
 }
 
 export function useFormattedPoolAttributes() {
   const { pool } = usePool()
   const { toCurrency } = useCurrency()
   const { usdValueForBpt } = useTokens()
+  const { gyroEParams } = useGetECLPLiquidityProfile(pool)
 
   const isV2 = isV2Pool(pool)
   const isV3 = isV3Pool(pool)
@@ -122,6 +136,38 @@ export function useFormattedPoolAttributes() {
         title: 'LP token price',
         value: toCurrency(usdValueForBpt(pool.address, pool.chain, '1')),
       },
+      isGyroEPool(pool)
+        ? {
+            title: 'Advanced E-CLP parameters',
+            dropdown: [
+              {
+                title: 'α (alpha)',
+                value: (Number(gyroEParams?.alpha) / 1e18).toFixed(4),
+                tooltip: 'The alpha parameter of the Gyro E-CLP curve',
+              },
+              {
+                title: 'β (beta)',
+                value: (Number(gyroEParams?.beta) / 1e18).toFixed(4),
+                tooltip: 'The beta parameter of the Gyro E-CLP curve',
+              },
+              {
+                title: 'c',
+                value: (Number(gyroEParams?.c) / 1e18).toFixed(4),
+                tooltip: 'The c parameter of the Gyro E-CLP curve',
+              },
+              {
+                title: 's',
+                value: (Number(gyroEParams?.s) / 1e18).toFixed(4),
+                tooltip: 'The s parameter of the Gyro E-CLP curve',
+              },
+              {
+                title: 'λ (lambda)',
+                value: (Number(gyroEParams?.lambda) / 1e18).toFixed(0),
+                tooltip: 'The lambda parameter of the Gyro E-CLP curve',
+              },
+            ],
+          }
+        : null,
     ])
     if (shouldHideSwapFee(pool?.type)) {
       return attributes.filter(a => a?.title !== 'Swap fees')

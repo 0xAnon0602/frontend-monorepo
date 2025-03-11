@@ -20,6 +20,8 @@ export function useGetECLPLiquidityProfile(pool: Pool) {
 
   const params = pool && pool.poolTokens ? destructureRequiredPoolParams(pool, tokenRates) : null
 
+  const gyroEParams = params ? params.gyroEParams : null
+
   const poolSpotPrice = params
     ? formatUnits(calculateSpotPrice(pool.type as GqlPoolType.Gyroe, params), 18)
     : null
@@ -40,6 +42,7 @@ export function useGetECLPLiquidityProfile(pool: Pool) {
 
   return {
     data,
+    gyroEParams,
     poolSpotPrice,
     poolIsInRange,
     xMin,
