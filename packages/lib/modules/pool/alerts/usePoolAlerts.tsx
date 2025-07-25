@@ -31,6 +31,16 @@ export function usePoolAlerts(pool: Pool) {
   const { hooks } = useHook(pool)
   const poolMetadata = usePoolMetadata(pool)
 
+  const invalidTokens = pool.poolTokens
+    .filter(token => token.balanceUSD === '0')
+    .map(token => token.symbol)
+
+  function formatTokenList(tokens: string[]): string {
+    if (tokens.length === 1) return tokens[0]
+    if (tokens.length === 2) return `${tokens[0]} and ${tokens[1]}`
+    return `${tokens.slice(0, -1).join(', ')}, and ${tokens[tokens.length - 1]}`
+  }
+
   const getNetworkPoolAlerts = (pool: Pool): PoolAlert[] => {
     const networkPoolsIssues = getNetworkConfig(pool.chain).pools?.issues
 
@@ -135,6 +145,15 @@ export function usePoolAlerts(pool: Pool) {
           isSoftWarning: true,
         })
       }
+    }
+
+    if (invalidTokens.length > 0) {
+      alerts.push({
+        identifier: `FiatValueUnavailable`,
+        content: `The price of ${formatTokenList(invalidTokens)} currently cannot be accessed. This may be due to the pricing provider, Coingecko, being down or not knowing one of the tokens. Only interact with this pool if you know exactly what you are doing.`,
+        status: 'warning',
+        isSoftWarning: false,
+      })
     }
 
     // check alerts for nested pools & tokens
