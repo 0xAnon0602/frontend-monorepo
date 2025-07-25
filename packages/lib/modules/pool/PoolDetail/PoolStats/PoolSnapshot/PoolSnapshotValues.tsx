@@ -1,7 +1,8 @@
 'use client'
 
 import { memo, useMemo } from 'react'
-import { HStack, Heading, Skeleton, Text, VStack } from '@chakra-ui/react'
+import { AlertTriangle } from 'react-feather'
+import { Box, HStack, Heading, Skeleton, Text, Tooltip, VStack } from '@chakra-ui/react'
 import { TokenIconStack } from '../../../../tokens/TokenIconStack'
 import { TokenStackPopover } from '../../../../tokens/TokenStackPopover'
 import { useCurrency } from '@repo/lib/shared/hooks/useCurrency'
@@ -48,6 +49,15 @@ export function PoolSnapshotValues() {
   }, [pool, tvl, weeklyRewards])
 
   const incomeLabel = isCowAmmPool(pool.type) ? 'Surplus (24h)' : 'Fees (24h)'
+  const invalidTokens = pool.poolTokens
+    .filter(token => token.balanceUSD === '0')
+    .map(token => token.symbol)
+
+  function formatTokenList(tokens: string[]): string {
+    if (tokens.length === 1) return tokens[0]
+    if (tokens.length === 2) return `${tokens[0]} and ${tokens[1]}`
+    return `${tokens.slice(0, -1).join(', ')}, and ${tokens[tokens.length - 1]}`
+  }
 
   return (
     <>
@@ -57,7 +67,23 @@ export function PoolSnapshotValues() {
             TVL
           </Text>
           {poolStatsValues ? (
-            <Heading size="h4">{poolStatsValues.totalLiquidity}</Heading>
+            <HStack>
+              <Heading color={invalidTokens.length > 0 ? 'font.warning' : 'font.primary'} size="h4">
+                {poolStatsValues.totalLiquidity}
+              </Heading>
+              {invalidTokens.length > 0 && (
+                <Tooltip
+                  backgroundColor="font.warning"
+                  hasArrow
+                  label={`This amount does not include the value of ${formatTokenList(invalidTokens)} ${invalidTokens.length === 1 ? 'token' : 'tokens'} since the current price cannot be accessed.`}
+                  placement="right"
+                >
+                  <Box color="font.warning">
+                    <AlertTriangle />
+                  </Box>
+                </Tooltip>
+              )}
+            </HStack>
           ) : (
             <Skeleton height="28px" w="100px" />
           )}
